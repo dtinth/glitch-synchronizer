@@ -62,6 +62,7 @@ for (const projectName of projectNames) {
     }
   } catch (e) {
     console.error('Failed to synchronize project', projectName, e)
+    process.exitCode = 1
   } finally {
     console.log('')
   }

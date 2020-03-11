@@ -65,7 +65,7 @@ for (const projectName of projectNames) {
         execSync(`git push origin FETCH_HEAD:refs/heads/${branch}`, passthru)
       } catch (error) {
         try {
-          throw new Error('TEST FAIL 2')
+          console.error(error)
           console.log('Failed to push to master, pushing to GitHub...')
           execSync(`git push origin -f FETCH_HEAD:refs/heads/glitch`, passthru)
           postToSlack({
@@ -77,6 +77,7 @@ for (const projectName of projectNames) {
               `https://github.com/${config.targetRepo}/compare/${branch}...glitch`,
           })
         } catch (error_) {
+          console.error(error_)
           postToSlack({
             text:
               `[glitch-synchronizer] ` +

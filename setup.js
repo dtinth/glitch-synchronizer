@@ -62,7 +62,7 @@ console.log(`
 |                       |     |
 | --------------------- | --- |
 | **Glitch project**    | https://glitch.com/~${projectName} |
-| **GitHub repository** | https://github.com/dtinth/${ownerRepo} |
+| **GitHub repository** | https://github.com/${ownerRepo} |
 `)
 
 console.log('')

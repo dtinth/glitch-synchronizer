@@ -83,7 +83,7 @@ for (const projectName of projectNames) {
               `Failed to synchronize Glitch project "${projectName}" ` +
               `and cannot push to "glitch" branch either... ` +
               `Please check out the workflow run for more info: ` +
-              `https://github.com/${thisRepo}/runs/${runId}`,
+              `https://github.com/${thisRepo}/actions/runs/${runId}`,
           })
           throw error_
         }

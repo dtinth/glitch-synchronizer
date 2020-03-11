@@ -1,0 +1,16 @@
+name: Synchronize Glitch
+on:
+  repository_dispatch: {}
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: Write private key
+        run: echo "$PRIVATE_KEY" > .keys/private.pem
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      - run: node sync.js

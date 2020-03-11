@@ -57,5 +57,14 @@ require('fs').writeFileSync(
 )
 
 console.log('')
+console.log('Links:')
+console.log(`
+|                       |     |
+| --------------------- | --- |
+| **Glitch project**    | https://glitch.com/~${projectName} |
+| **GitHub repository** | https://github.com/dtinth/${ownerRepo} |
+`)
+
+console.log('')
 console.log(`Keys generated. Add this deploy key to ${ownerRepo}:`)
 execSync(`cat '${publicKeyPath}'`, passthru)

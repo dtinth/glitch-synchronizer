@@ -74,7 +74,9 @@ for (const projectName of projectNames) {
                 try {
                   return (
                     ' (as of ' +
-                    execSync('git log -1 --format=%cI FETCH_HEAD').trim() +
+                    String(
+                      execSync('git log -1 --format=%cI FETCH_HEAD'),
+                    ).trim() +
                     ')'
                   )
                 } catch (err) {

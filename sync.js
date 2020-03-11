@@ -61,7 +61,6 @@ for (const projectName of projectNames) {
       const runId = process.env.GITHUB_RUN_ID
       const branch = config.targetBranch || 'master'
       try {
-        throw new Error('TEST FAIL 1')
         execSync(`git push origin FETCH_HEAD:refs/heads/${branch}`, passthru)
       } catch (error) {
         try {

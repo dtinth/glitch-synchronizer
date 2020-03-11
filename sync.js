@@ -67,13 +67,29 @@ for (const projectName of projectNames) {
         try {
           console.error(error)
           execSync(`git push origin -f FETCH_HEAD:refs/heads/glitch`, passthru)
+          const targetRepo = config.targetRepo
+          const title = encodeURIComponent(
+            `Updates from Glitch` +
+              (() => {
+                try {
+                  return (
+                    ' (as of ' +
+                    execSync('git log -1 --format=%cI FETCH_HEAD').trim() +
+                    ')'
+                  )
+                } catch (err) {
+                  console.error('Failed to get last commit time', err)
+                  return ''
+                }
+              })(),
+          )
           postToSlack({
             text:
               `[glitch-synchronizer] ` +
               `Failed to synchronize Glitch project "${projectName}". ` +
               `I pushed the Glitch project to the branch "glitch", ` +
               `please open a PR here: ` +
-              `https://github.com/${config.targetRepo}/compare/${branch}...glitch`,
+              `https://github.com/${targetRepo}/compare/${branch}...glitch?title=${title}`,
           })
         } catch (error_) {
           console.error(error_)

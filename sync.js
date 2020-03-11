@@ -1,6 +1,7 @@
 const { execSync } = require('child_process')
 const passthru = { stdio: 'inherit' }
 const fs = require('fs')
+const postToSlack = require('./postToSlack')
 const projectNames = fs
   .readdirSync('projects')
   .map(p => p.match(/^([^]+)\.config\.json$/))
@@ -56,7 +57,38 @@ for (const projectName of projectNames) {
       console.log('')
 
       console.log('Pushing back to GitHub...')
-      execSync(`git push origin FETCH_HEAD:master`, passthru)
+      const thisRepo = process.env.GITHUB_REPOSITORY
+      const runId = process.env.GITHUB_RUN_ID
+      const branch = config.targetBranch || 'master'
+      try {
+        throw new Error('TEST FAIL 1')
+        execSync(`git push origin FETCH_HEAD:refs/heads/${branch}`, passthru)
+      } catch (error) {
+        try {
+          throw new Error('TEST FAIL 2')
+          console.log('Failed to push to master, pushing to GitHub...')
+          execSync(`git push origin -f FETCH_HEAD:refs/heads/glitch`, passthru)
+          postToSlack({
+            text:
+              `[glitch-synchronizer] ` +
+              `Failed to synchronize Glitch project "${projectName}". ` +
+              `I pushed the Glitch project to the branch "glitch", ` +
+              `please open a PR here: ` +
+              `https://github.com/${config.targetRepo}/compare/${branch}...glitch`,
+          })
+        } catch (error_) {
+          postToSlack({
+            text:
+              `[glitch-synchronizer] ` +
+              `Failed to synchronize Glitch project "${projectName}" ` +
+              `and cannot push to "glitch" branch either... ` +
+              `Please check out the workflow run for more info: ` +
+              `https://github.com/${thisRepo}/runs/${runId}`,
+          })
+          throw error_
+        }
+        throw error
+      }
       console.log('')
     } finally {
       delete process.env.GIT_SSH_COMMAND

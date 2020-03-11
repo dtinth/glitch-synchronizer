@@ -61,12 +61,12 @@ for (const projectName of projectNames) {
       const runId = process.env.GITHUB_RUN_ID
       const branch = config.targetBranch || 'master'
       try {
+        execSync(`git push origin -f FETCH_HEAD:refs/heads/glitch`, passthru)
         execSync(`git push origin FETCH_HEAD:refs/heads/${branch}`, passthru)
       } catch (error) {
         try {
           console.error(error)
           console.log('Failed to push to master, pushing to GitHub...')
-          execSync(`git push origin -f FETCH_HEAD:refs/heads/glitch`, passthru)
           postToSlack({
             text:
               `[glitch-synchronizer] ` +

@@ -31,6 +31,7 @@ for (const projectName of projectNames) {
       `openssl enc -d -aes-256-cbc -md sha256 -in '${encryptedPrivateKeyPath}' -out '${privateKeyPath}' -pass 'file:${encryptionKeyPath}'`,
       passthru,
     )
+    execSync(`chmod 600 '${privateKeyPath}'`, passthru)
     console.log('')
 
     process.env.GIT_SSH_COMMAND = `ssh -i ${privateKeyPath}`

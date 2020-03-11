@@ -1,4 +1,5 @@
 const { execSync } = require('child_process')
+const fs = require('fs')
 const passthru = { stdio: 'inherit' }
 const projectName = process.argv[2]
 if (!projectName) {
@@ -21,11 +22,13 @@ const encryptedEncryptionKeyPath = `${encryptionKeyPath}.enc`
 const encryptedPrivateKeyPath = `${privateKeyPath}.enc`
 
 // https://unix.stackexchange.com/questions/69314/automated-ssh-keygen-without-passphrase-how
-console.log('Generating a deploy keypair...')
-execSync(
-  `ssh-keygen -t rsa -f '${privateKeyPath}' -C 'glitch-synchronizer ${projectName} deploy key' -q -P ''`,
-  passthru,
-)
+if (!fs.existsSync(privateKeyPath) || !fs.existsSync(publicKeyPath)) {
+  console.log('Generating a deploy keypair...')
+  execSync(
+    `ssh-keygen -t rsa -f '${privateKeyPath}' -C 'glitch-synchronizer ${projectName} deploy key' -q -P ''`,
+    passthru,
+  )
+}
 
 // https://www.czeskis.com/random/openssl-encrypt-file.html
 console.log('')
@@ -42,7 +45,7 @@ execSync(
 console.log('')
 console.log('Encrypting the deploy key...')
 execSync(
-  `openssl enc -aes-256-cbc -salt -in '${privateKeyPath}' -out '${encryptedPrivateKeyPath}' -pass 'file:${encryptionKeyPath}'`,
+  `openssl enc -aes-256-cbc -md sha256 -salt -in '${privateKeyPath}' -out '${encryptedPrivateKeyPath}' -pass 'file:${encryptionKeyPath}'`,
   passthru,
 )
 

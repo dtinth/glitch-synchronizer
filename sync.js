@@ -28,7 +28,7 @@ for (const projectName of projectNames) {
 
     console.log('Decrypting the deploy key...')
     execSync(
-      `openssl enc -d -aes-256-cbc -in '${encryptedPrivateKeyPath}' -out '${privateKeyPath}' -pass 'file:${encryptionKeyPath}'`,
+      `openssl enc -d -aes-256-cbc -md sha256 -in '${encryptedPrivateKeyPath}' -out '${privateKeyPath}' -pass 'file:${encryptionKeyPath}'`,
       passthru,
     )
     console.log('')

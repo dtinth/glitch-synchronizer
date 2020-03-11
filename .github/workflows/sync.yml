@@ -10,7 +10,7 @@ jobs:
         with:
           node-version: 12.x
       - name: Write private key
-        run: echo "$PRIVATE_KEY" > .keys/private.pem
+        run: echo "$PRIVATE_KEY" > keys/private.pem
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
       - run: node sync.js

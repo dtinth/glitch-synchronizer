@@ -68,3 +68,19 @@ console.log(`
 console.log('')
 console.log(`Keys generated. Add this deploy key to ${ownerRepo}:`)
 execSync(`cat '${publicKeyPath}'`, passthru)
+
+if (fs.existsSync('secrets.js')) {
+  const token = require('./secrets').githubToken
+  console.log('Trying to add it for you!!')
+  require('child_process').execSync(
+    `curl -X POST -H 'Content-Type: application/json' -d @- 'https://api.github.com/repos/${ownerRepo}/keys?access_token=${token}'`,
+    {
+      stdio: ['pipe', 'inherit', 'inherit'],
+      input: JSON.stringify({
+        title: `glitch-synchronizer ${projectName}`,
+        key: fs.readFileSync(publicKeyPath, 'utf8'),
+        read_only: false,
+      }),
+    },
+  )
+}

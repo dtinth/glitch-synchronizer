@@ -3,9 +3,12 @@ on:
   repository_dispatch: {}
   schedule:
     - cron: '0 0 * * *'
+  issues:
+    types: [labeled]
 jobs:
   sync:
     runs-on: ubuntu-latest
+    if: (github.event_name == 'repository_dispatch') || (github.event_name == 'schedule') || (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.issue.number == 1 && github.event.issue.labels[0].name == 'trigger')
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1

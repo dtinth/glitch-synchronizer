@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * *'
   issues:
     types: [labeled]
+  push:
+    branches:
+      - master
 jobs:
   sync:
     runs-on: ubuntu-latest

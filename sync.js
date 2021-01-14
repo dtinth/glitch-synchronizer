@@ -4,14 +4,16 @@ const fs = require('fs')
 const postToSlack = require('./postToSlack')
 const projectNames = fs
   .readdirSync('projects')
-  .map(p => p.match(/^([^]+)\.config\.json$/))
-  .filter(m => m)
-  .map(m => m[1])
+  .map((p) => p.match(/^([^]+)\.config\.json$/))
+  .filter((m) => m)
+  .map((m) => m[1])
 
 process.env.GIT_COMMITTER_NAME = 'dtinth-bot'
 process.env.GIT_AUTHOR_NAME = 'dtinth-bot'
 process.env.GIT_COMMITTER_EMAIL = 'dtinth-bot@users.noreply.github.com'
 process.env.GIT_AUTHOR_EMAIL = 'dtinth-bot@users.noreply.github.com'
+
+const here = process.cwd()
 
 for (const projectName of projectNames) {
   const configPath = `projects/${projectName}.config.json`
@@ -22,6 +24,7 @@ for (const projectName of projectNames) {
   const encryptedPrivateKeyPath = `${privateKeyPath}.enc`
   const config = require(fs.realpathSync(configPath))
 
+  process.chdir(here)
   console.log('#', projectName)
   try {
     // https://www.czeskis.com/random/openssl-encrypt-file.html
@@ -40,9 +43,7 @@ for (const projectName of projectNames) {
     execSync(`chmod 600 '${privateKeyPath}'`, passthru)
     console.log('')
 
-    process.env.GIT_SSH_COMMAND = `ssh -i ${privateKeyPath}`
-    delete process.env.GIT_DIR
-    delete process.env.GIT_WORK_TREE
+    process.env.GIT_SSH_COMMAND = `ssh -i ${fs.realpathSync(privateKeyPath)}`
     try {
       console.log('Cleaning up Git directory...')
       execSync(`rm -rf '${gitRepoPath}'`, passthru)
@@ -50,69 +51,78 @@ for (const projectName of projectNames) {
 
       console.log('Cloning Git repository...')
       execSync(
-        `git clone --bare 'git@github.com:${config.targetRepo}' '${gitRepoPath}'`,
+        `git clone 'git@github.com:${config.targetRepo}' '${gitRepoPath}'`,
         passthru,
       )
       console.log('')
 
-      console.log('Fetching from Glitch...')
-      execSync(
-        `git fetch 'https://api.glitch.com/git/${projectName}' master`,
-        passthru,
-      )
-      process.env.GIT_DIR = gitRepoPath + '/.git'
-      process.env.GIT_WORK_TREE = gitRepoPath
-      const commitTime = (() => {
-        try {
-          const t = String(execSync('git log -1 --format=%cI FETCH_HEAD')).trim()
-          return (' (as of ' + t + ')')
-        } catch (err) {
-          console.error('Failed to get last commit time', err)
-          return ''
-        }
-      })()
-      console.log('Latest commit on Glitch is at', commitTime)
-      console.log('')
-
-      console.log('Pushing back to GitHub...')
-      const thisRepo = process.env.GITHUB_REPOSITORY
-      const runId = process.env.GITHUB_RUN_ID
-      const branch = config.targetBranch || 'master'
+      process.chdir(gitRepoPath)
       try {
-        execSync(`git branch glitch-synchronizer FETCH_HEAD`, passthru)
-        execSync(`git push origin -f glitch-synchronizer:refs/heads/glitch`, passthru)
-        execSync(`git merge --no-ff glitch-synchronizer -m 'Updates from Glitch${commitTime}'`, passthru)
-        execSync(`git push origin HEAD:refs/heads/${branch}`, passthru)
-      } catch (error) {
+        console.log('Fetching from Glitch...')
+        execSync(
+          `git fetch 'https://api.glitch.com/git/${projectName}' master`,
+          passthru,
+        )
+        const commitTime = (() => {
+          try {
+            const t = String(
+              execSync('git log -1 --format=%cI FETCH_HEAD'),
+            ).trim()
+            return ' (as of ' + t + ')'
+          } catch (err) {
+            console.error('Failed to get last commit time', err)
+            return ''
+          }
+        })()
+        console.log('Latest commit on Glitch is at', commitTime)
+        console.log('')
+
+        console.log('Pushing back to GitHub...')
+        const thisRepo = process.env.GITHUB_REPOSITORY
+        const runId = process.env.GITHUB_RUN_ID
+        const branch = config.targetBranch || 'master'
         try {
-          console.error(error)
-          const targetRepo = config.targetRepo
-          const title = encodeURIComponent(
-            `Updates from Glitch` + commitTime,
+          execSync(`git branch glitch-synchronizer FETCH_HEAD`, passthru)
+          execSync(
+            `git push origin -f glitch-synchronizer:refs/heads/glitch`,
+            passthru,
           )
-          postToSlack({
-            text:
-              `[glitch-synchronizer] ` +
-              `Failed to synchronize Glitch project "${projectName}". ` +
-              `I pushed the Glitch project to the branch "glitch", ` +
-              `please open a PR here: ` +
-              `https://github.com/${targetRepo}/compare/${branch}...glitch?title=${title}`,
-          })
-        } catch (error_) {
-          console.error(error_)
-          postToSlack({
-            text:
-              `[glitch-synchronizer] ` +
-              `Failed to synchronize Glitch project "${projectName}" ` +
-              `and cannot push to "glitch" branch either... ` +
-              `Please check out the workflow run for more info: ` +
-              `https://github.com/${thisRepo}/actions/runs/${runId}`,
-          })
-          throw error_
+          execSync(
+            `git merge --no-ff glitch-synchronizer -m 'Updates from Glitch${commitTime}'`,
+            passthru,
+          )
+          execSync(`git push origin HEAD:refs/heads/${branch}`, passthru)
+        } catch (error) {
+          try {
+            console.error(error)
+            const targetRepo = config.targetRepo
+            const title = encodeURIComponent(`Updates from Glitch` + commitTime)
+            postToSlack({
+              text:
+                `[glitch-synchronizer] ` +
+                `Failed to synchronize Glitch project "${projectName}". ` +
+                `I pushed the Glitch project to the branch "glitch", ` +
+                `please open a PR here: ` +
+                `https://github.com/${targetRepo}/compare/${branch}...glitch?title=${title}`,
+            })
+          } catch (error_) {
+            console.error(error_)
+            postToSlack({
+              text:
+                `[glitch-synchronizer] ` +
+                `Failed to synchronize Glitch project "${projectName}" ` +
+                `and cannot push to "glitch" branch either... ` +
+                `Please check out the workflow run for more info: ` +
+                `https://github.com/${thisRepo}/actions/runs/${runId}`,
+            })
+            throw error_
+          }
+          throw error
         }
-        throw error
+        console.log('')
+      } finally {
+        process.chdir(here)
       }
-      console.log('')
     } finally {
       delete process.env.GIT_SSH_COMMAND
     }

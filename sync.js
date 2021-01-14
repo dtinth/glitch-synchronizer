@@ -41,8 +41,8 @@ for (const projectName of projectNames) {
     console.log('')
 
     process.env.GIT_SSH_COMMAND = `ssh -i ${privateKeyPath}`
-    process.env.GIT_DIR = gitRepoPath + '/.git'
-    process.env.GIT_WORK_TREE = gitRepoPath
+    delete process.env.GIT_DIR
+    delete process.env.GIT_WORK_TREE
     try {
       console.log('Cleaning up Git directory...')
       execSync(`rm -rf '${gitRepoPath}'`, passthru)
@@ -60,6 +60,8 @@ for (const projectName of projectNames) {
         `git fetch 'https://api.glitch.com/git/${projectName}' master`,
         passthru,
       )
+      process.env.GIT_DIR = gitRepoPath + '/.git'
+      process.env.GIT_WORK_TREE = gitRepoPath
       const commitTime = (() => {
         try {
           const t = String(execSync('git log -1 --format=%cI FETCH_HEAD')).trim()

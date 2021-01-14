@@ -8,10 +8,15 @@ const projectNames = fs
   .filter(m => m)
   .map(m => m[1])
 
+process.env.GIT_COMMITTER_NAME = 'dtinth-bot'
+process.env.GIT_AUTHOR_NAME = 'dtinth-bot'
+process.env.GIT_COMMITTER_EMAIL = 'dtinth-bot@users.noreply.github.com'
+process.env.GIT_AUTHOR_EMAIL = 'dtinth-bot@users.noreply.github.com'
+
 for (const projectName of projectNames) {
   const configPath = `projects/${projectName}.config.json`
   const privateKeyPath = `projects/${projectName}.sshkey`
-  const gitRepoPath = `projects/${projectName}.git`
+  const gitRepoPath = `projects/${projectName}-git`
   const encryptionKeyPath = `projects/${projectName}.enckey`
   const encryptedEncryptionKeyPath = `${encryptionKeyPath}.enc`
   const encryptedPrivateKeyPath = `${privateKeyPath}.enc`
@@ -36,7 +41,8 @@ for (const projectName of projectNames) {
     console.log('')
 
     process.env.GIT_SSH_COMMAND = `ssh -i ${privateKeyPath}`
-    process.env.GIT_DIR = gitRepoPath
+    process.env.GIT_DIR = gitRepoPath + '/.git'
+    process.env.GIT_WORK_TREE = gitRepoPath
     try {
       console.log('Cleaning up Git directory...')
       execSync(`rm -rf '${gitRepoPath}'`, passthru)
@@ -54,6 +60,16 @@ for (const projectName of projectNames) {
         `git fetch 'https://api.glitch.com/git/${projectName}' master`,
         passthru,
       )
+      const commitTime = (() => {
+        try {
+          const t = String(execSync('git log -1 --format=%cI FETCH_HEAD')).trim()
+          return (' (as of ' + t + ')')
+        } catch (err) {
+          console.error('Failed to get last commit time', err)
+          return ''
+        }
+      })()
+      console.log('Latest commit on Glitch is at', commitTime)
       console.log('')
 
       console.log('Pushing back to GitHub...')
@@ -61,29 +77,16 @@ for (const projectName of projectNames) {
       const runId = process.env.GITHUB_RUN_ID
       const branch = config.targetBranch || 'master'
       try {
-        execSync(`git push origin FETCH_HEAD:refs/heads/${branch}`, passthru)
-        execSync(`git push origin -f FETCH_HEAD:refs/heads/glitch`, passthru)
+        execSync(`git branch glitch-synchronizer FETCH_HEAD`, passthru)
+        execSync(`git push origin -f glitch-synchronizer:refs/heads/glitch`, passthru)
+        execSync(`git merge --no-ff glitch-synchronizer -m 'Updates from Glitch${commitTime}'`, passthru)
+        execSync(`git push origin HEAD:refs/heads/${branch}`, passthru)
       } catch (error) {
         try {
           console.error(error)
-          execSync(`git push origin -f FETCH_HEAD:refs/heads/glitch`, passthru)
           const targetRepo = config.targetRepo
           const title = encodeURIComponent(
-            `Updates from Glitch` +
-              (() => {
-                try {
-                  return (
-                    ' (as of ' +
-                    String(
-                      execSync('git log -1 --format=%cI FETCH_HEAD'),
-                    ).trim() +
-                    ')'
-                  )
-                } catch (err) {
-                  console.error('Failed to get last commit time', err)
-                  return ''
-                }
-              })(),
+            `Updates from Glitch` + commitTime,
           )
           postToSlack({
             text:

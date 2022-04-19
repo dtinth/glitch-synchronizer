@@ -1,0 +1,7 @@
+{
+  "name": "fresh-app",
+  "packageManager": "yarn@3.2.0",
+  "devDependencies": {
+    "typescript": "^4.6.3"
+  }
+}

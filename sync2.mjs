@@ -42,13 +42,14 @@ const getAccessToken = pMemoize(async (owner) => {
   }).catch(
     enhanceError(`Unable to get installation access token for "${owner}"`),
   )
-  return installationAuthResult.token
+  const token = installationAuthResult.token
+  console.log(`::add-mask::${token}`)
+  return token
 })
 
 // const files = glob.sync('./projects/*.config.json')
 // for (const configFile of files) {
 //   const projectName = basename(configFile, '.config.json')
-//   console.log(`# ${projectName}`)
 //   try {
 //     const config = JSON.parse(
 //       readFileSync(new URL(configFile, import.meta.url), 'utf8'),
@@ -69,42 +70,45 @@ async function run(cmd, { env = {} } = {}) {
 }
 
 async function sync(projectName, targetRepo) {
-  const accessToken = await getAccessToken(targetRepo.split('/')[0])
-  const gitRepoPath = `tmp/projects/${projectName}-git`
-  await run(`rm -rf '${gitRepoPath}'`)
-  await run(`gh repo clone '${targetRepo}' '${gitRepoPath}'`, {
-    env: { GITHUB_TOKEN: accessToken },
-  })
-  await run(
-    `cd '${gitRepoPath}' && git fetch 'https://api.glitch.com/git/${projectName}' master`,
-  )
-  const commitTime = (() => {
-    try {
-      const t = String(
-        execSync(`cd '${gitRepoPath}' && git log -1 --format=%cI FETCH_HEAD`),
-      ).trim()
-      return ' (as of ' + t + ')'
-    } catch (err) {
-      console.error('Failed to get last commit time', err)
-      return ''
-    }
-  })()
-  console.log('Latest commit on Glitch is at', commitTime)
-  console.log('')
-  console.log('Pushing back to GitHub...')
-  await run(`cd '${gitRepoPath}' && git branch glitch-synchronizer FETCH_HEAD`)
-  await run(
-    `cd '${gitRepoPath}' && git push origin -f glitch-synchronizer:refs/heads/glitch`,
-    {
-      env: { GITHUB_TOKEN: accessToken },
-    },
-  )
-  await run(
-    `cd '${gitRepoPath}' && git merge --no-ff glitch-synchronizer -m 'Updates from Glitch${commitTime}'`,
-  )
-  await run(`cd '${gitRepoPath}' && git push`, {
-    env: { GITHUB_TOKEN: accessToken },
-  })
+  console.log(`::group::${projectName}`)
+  try {
+    const accessToken = await getAccessToken(targetRepo.split('/')[0])
+    const gitRepoPath = `tmp/projects/${projectName}-git`
+    await run(`rm -rf '${gitRepoPath}'`)
+    await run(
+      `git clone "https://x-access-token:$GITHUB_TOKEN@github.com/${targetRepo}.git" '${gitRepoPath}'`,
+      { env: { GITHUB_TOKEN: accessToken } },
+    )
+    await run(
+      `cd '${gitRepoPath}' && git fetch 'https://api.glitch.com/git/${projectName}' master`,
+    )
+    const commitTime = (() => {
+      try {
+        const t = String(
+          execSync(`cd '${gitRepoPath}' && git log -1 --format=%cI FETCH_HEAD`),
+        ).trim()
+        return ' (as of ' + t + ')'
+      } catch (err) {
+        console.error('Failed to get last commit time', err)
+        return ''
+      }
+    })()
+    console.log('Latest commit on Glitch is at', commitTime)
+    console.log('')
+    console.log('Pushing back to GitHub...')
+    await run(
+      `cd '${gitRepoPath}' && git branch glitch-synchronizer FETCH_HEAD`,
+    )
+    await run(
+      `cd '${gitRepoPath}' && git push origin -f glitch-synchronizer:refs/heads/glitch`,
+    )
+    await run(
+      `cd '${gitRepoPath}' && git merge --no-ff glitch-synchronizer -m 'Updates from Glitch${commitTime}'`,
+    )
+    await run(`cd '${gitRepoPath}' && git push`)
+  } finally {
+    console.log(`::endgroup::`)
+  }
 }
 
 // await sync('another-screen', 'dtinth/another-screen')

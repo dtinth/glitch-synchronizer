@@ -59,7 +59,7 @@ const getAccessToken = pMemoize(async (owner) => {
 //   }
 // }
 
-async function run(cmd, env) {
+async function run(cmd, { env }) {
   console.log('[run]', cmd)
   await execa(cmd, {
     shell: true,
@@ -73,7 +73,7 @@ async function sync(projectName, targetRepo) {
   const gitRepoPath = `tmp/projects/${projectName}-git`
   await run(`rm -rf '${gitRepoPath}'`)
   await run(`gh repo clone '${targetRepo}' '${gitRepoPath}'`, {
-    GITHUB_TOKEN: accessToken,
+    env: { GITHUB_TOKEN: accessToken },
   })
   await run(
     `cd '${gitRepoPath}' && git fetch 'https://api.glitch.com/git/${projectName}' master`,
@@ -95,11 +95,16 @@ async function sync(projectName, targetRepo) {
   await run(`cd '${gitRepoPath}' && git branch glitch-synchronizer FETCH_HEAD`)
   await run(
     `cd '${gitRepoPath}' && git push origin -f glitch-synchronizer:refs/heads/glitch`,
+    {
+      env: { GITHUB_TOKEN: accessToken },
+    },
   )
   await run(
     `cd '${gitRepoPath}' && git merge --no-ff glitch-synchronizer -m 'Updates from Glitch${commitTime}'`,
   )
-  await run(`cd '${gitRepoPath}' && git push`)
+  await run(`cd '${gitRepoPath}' && git push`, {
+    env: { GITHUB_TOKEN: accessToken },
+  })
 }
 
 // await sync('another-screen', 'dtinth/another-screen')

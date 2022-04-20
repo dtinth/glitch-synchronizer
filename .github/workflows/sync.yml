@@ -1,13 +1,10 @@
 name: Synchronize Glitch
 on:
-  repository_dispatch: {}
+  workflow_dispatch: {}
   schedule:
     - cron: '0 0 * * *'
   issues:
     types: [labeled]
-  push:
-    branches:
-      - master
 jobs:
   sync:
     runs-on: ubuntu-latest

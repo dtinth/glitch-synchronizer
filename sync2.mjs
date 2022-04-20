@@ -52,19 +52,6 @@ const getAccessToken = pMemoize(async (owner) => {
   return token
 })
 
-// const files = glob.sync('./projects/*.config.json')
-// for (const configFile of files) {
-//   const projectName = basename(configFile, '.config.json')
-//   try {
-//     const config = JSON.parse(
-//       readFileSync(new URL(configFile, import.meta.url), 'utf8'),
-//     )
-//     console.log(config)
-//   } catch (e) {
-//     console.error(e)
-//   }
-// }
-
 async function run(cmd, { env = {} } = {}) {
   console.log('[run]', cmd)
   await execa(cmd, {
@@ -116,5 +103,15 @@ async function sync(projectName, targetRepo) {
   }
 }
 
-// await sync('another-screen', 'dtinth/another-screen')
-await sync('showdownspace-bot', 'showdownspace/bot-runtime')
+const files = glob.sync('./projects/*.config.json')
+for (const configFile of files) {
+  const projectName = basename(configFile, '.config.json')
+  try {
+    const config = JSON.parse(
+      readFileSync(new URL(configFile, import.meta.url), 'utf8'),
+    )
+    await sync(projectName, config.targetRepo)
+  } catch (e) {
+    console.error(e)
+  }
+}

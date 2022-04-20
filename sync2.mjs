@@ -9,6 +9,11 @@ import pMemoize from 'p-memoize'
 import { execa } from 'execa'
 import { execSync } from 'child_process'
 
+process.env.GIT_COMMITTER_NAME = 'dtinth-bot'
+process.env.GIT_AUTHOR_NAME = 'dtinth-bot'
+process.env.GIT_COMMITTER_EMAIL = 'dtinth-bot@users.noreply.github.com'
+process.env.GIT_AUTHOR_EMAIL = 'dtinth-bot@users.noreply.github.com'
+
 mkdirSync('tmp/projects', { recursive: true })
 
 const authConfig = {

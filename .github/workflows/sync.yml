@@ -11,3 +11,6 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 16.x
+      - run: yarn node sync2.mjs
+        env:
+          GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}

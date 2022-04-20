@@ -59,7 +59,7 @@ const getAccessToken = pMemoize(async (owner) => {
 //   }
 // }
 
-async function run(cmd, { env }) {
+async function run(cmd, { env = {} } = {}) {
   console.log('[run]', cmd)
   await execa(cmd, {
     shell: true,

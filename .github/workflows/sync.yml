@@ -3,29 +3,14 @@ on:
   workflow_dispatch: {}
   schedule:
     - cron: '0 0 * * *'
-  issues:
-    types: [labeled]
 jobs:
   sync:
     runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'repository_dispatch') ||
-      (github.event_name == 'schedule') ||
-      (github.event_name == 'push') ||
-      (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.issue.number == 1 && github.event.issue.labels[0].name == 'trigger')
     steps:
-      - name: unlabel (if labeled)
-        run: |
-          curl -X DELETE "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/1/labels/trigger?access_token=${{ secrets.GITHUB_TOKEN }}"
-        if: github.event_name == 'issues'
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
         with:
-          node-version: 12.x
-      - name: Write private key
-        run: echo "$PRIVATE_KEY" > keys/private.pem
+          node-version: 16.x
+      - run: yarn node sync.mjs
         env:
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-      - run: node sync.js
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
